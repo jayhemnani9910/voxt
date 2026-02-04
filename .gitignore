@@ -1,0 +1,19 @@
+# Binary
+voxt
+
+# Build artifacts
+build/
+*.log
+
+# IDE/Editor
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# Local settings
+.claude/
+
+# OS files
+.DS_Store
+Thumbs.db
