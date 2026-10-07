@@ -13,7 +13,6 @@ type Tray struct {
 	quitItem     *systray.MenuItem
 
 	onSettings func()
-	onQuit     func()
 
 	done chan struct{}
 }
@@ -33,14 +32,6 @@ func (t *Tray) SetOnSettings(callback func()) {
 		return
 	}
 	t.onSettings = callback
-}
-
-// SetOnQuit sets the callback for when Quit is clicked
-func (t *Tray) SetOnQuit(callback func()) {
-	if callback == nil {
-		return
-	}
-	t.onQuit = callback
 }
 
 // Run starts the system tray event loop (blocking)
@@ -72,9 +63,6 @@ func (t *Tray) onReady() {
 					t.onSettings()
 				}
 			case <-t.quitItem.ClickedCh:
-				if t.onQuit != nil {
-					t.onQuit()
-				}
 				systray.Quit()
 				return
 			case <-t.done:
@@ -99,9 +87,4 @@ func (t *Tray) SetIdle() {
 func (t *Tray) SetRecording() {
 	systray.SetIcon(t.recordingIcon)
 	systray.SetTooltip("Voxt - Recording...")
-}
-
-// Quit exits the system tray
-func (t *Tray) Quit() {
-	systray.Quit()
 }

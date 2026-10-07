@@ -168,11 +168,19 @@ func (a *App) monitorRecorderErrors() {
 				if a.notifier != nil {
 					a.notifier.ShowError("Recording error: " + err.Error())
 				}
-				// Reset state on error
+				// The recorder goroutine has exited but the recorder still counts
+				// as recording; Stop clears that (or every later Start fails) and
+				// saves what was captured, e.g. at the 10 minute cap.
 				a.mu.Lock()
 				if a.state == StateRecording {
-					a.state = StateIdle
 					a.tray.SetIdle()
+					if audioPath, err := a.recorder.Stop(); err == nil {
+						a.state = StateTranscribing
+						go a.transcribeAndNotify(audioPath)
+					} else {
+						log.Printf("Recording stop after error failed: %v", err)
+						a.state = StateIdle
+					}
 				}
 				a.mu.Unlock()
 			}
@@ -233,11 +241,9 @@ func (a *App) stopRecording() {
 
 	log.Println("Stopping recording...")
 
-	// Play stop beep
-	a.playBeep("stop")
-
-	// Stop recording
+	// Stop recording before the beep, so the beep is not in the audio
 	audioPath, err := a.recorder.Stop()
+	a.playBeep("stop")
 	if err != nil {
 		log.Printf("Recording stop failed: %v", err)
 		a.tray.SetIdle()
@@ -269,6 +275,14 @@ func (a *App) transcribeAndNotify(audioPath string) {
 	if a.ctx.Err() != nil {
 		log.Println("Transcription cancelled: context done")
 		return
+	}
+
+	// The key may have been added in Settings since startup; pick it up.
+	if a.config.GroqAPIKey == "" || a.transcriber == nil {
+		if cfg, err := config.Load(); err == nil && cfg.GroqAPIKey != "" {
+			a.config.GroqAPIKey = cfg.GroqAPIKey
+			a.transcriber = transcribe.NewTranscriber(cfg.GroqAPIKey)
+		}
 	}
 
 	if a.config.GroqAPIKey == "" {
@@ -377,7 +391,12 @@ func (a *App) showSettings() {
 		return
 	}
 	log.Printf("Opening settings: %s", configPath)
-	exec.Command("xdg-open", configPath).Start()
+	cmd := exec.Command("xdg-open", configPath)
+	if err := cmd.Start(); err != nil {
+		log.Printf("Failed to open settings: %v", err)
+		return
+	}
+	go cmd.Wait() // reap the child
 }
 
 func (a *App) cleanup() {

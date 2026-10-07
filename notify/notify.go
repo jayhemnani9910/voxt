@@ -71,7 +71,8 @@ func (n *Notifier) ShowTranscription(text string) error {
 		return err
 	}
 
-	log.Printf("Notification shown: %s", displayText)
+	// Length only: the text is whatever the user dictated.
+	log.Printf("Notification shown (%d chars)", len(displayText))
 	return nil
 }
 
@@ -82,19 +83,6 @@ func (n *Notifier) ShowError(message string) error {
 		Summary:       "Error",
 		Body:          message,
 		ExpireTimeout: 5000, // 5 seconds for errors
-	}
-
-	_, err := n.notifier.SendNotification(notification)
-	return err
-}
-
-// ShowInfo shows an informational notification
-func (n *Notifier) ShowInfo(title, message string) error {
-	notification := notify.Notification{
-		AppName:       "Voxt",
-		Summary:       title,
-		Body:          message,
-		ExpireTimeout: 3000,
 	}
 
 	_, err := n.notifier.SendNotification(notification)
