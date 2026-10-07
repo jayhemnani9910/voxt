@@ -208,14 +208,21 @@ func isKeyboardDevice(file *os.File, keyCode uint16) bool {
 	// Buffer to hold key bits (96 bytes = 768 bits, enough for KEY_MAX)
 	var keyBits [96]byte
 
-	_, _, errno := syscall.Syscall(
-		syscall.SYS_IOCTL,
-		file.Fd(),
-		uintptr(EVIOCGBIT_EV_KEY),
-		uintptr(unsafe.Pointer(&keyBits[0])),
-	)
-
-	if errno != 0 {
+	// SyscallConn, not Fd(): Fd() switches the file to blocking mode, and then
+	// the read deadline in listenDevice never fires, so Stop() hung on quit.
+	rawConn, err := file.SyscallConn()
+	if err != nil {
+		return false
+	}
+	var errno syscall.Errno
+	if err := rawConn.Control(func(fd uintptr) {
+		_, _, errno = syscall.Syscall(
+			syscall.SYS_IOCTL,
+			fd,
+			uintptr(EVIOCGBIT_EV_KEY),
+			uintptr(unsafe.Pointer(&keyBits[0])),
+		)
+	}); err != nil || errno != 0 {
 		return false
 	}
 
@@ -287,42 +294,4 @@ func (h *HotkeyListener) listenDevice(device *os.File) {
 			}
 		}
 	}
-}
-
-// GetSupportedKeys returns a list of supported key names
-func GetSupportedKeys() []string {
-	keys := make([]string, 0, len(keyNameToCode))
-	for key := range keyNameToCode {
-		keys = append(keys, key)
-	}
-	return keys
-}
-
-// CheckPermissions checks if the current user has access to input devices
-func CheckPermissions() error {
-	inputDir := "/dev/input"
-
-	entries, err := os.ReadDir(inputDir)
-	if err != nil {
-		return fmt.Errorf("cannot read /dev/input: %w", err)
-	}
-
-	for _, entry := range entries {
-		if !strings.HasPrefix(entry.Name(), "event") {
-			continue
-		}
-
-		devicePath := filepath.Join(inputDir, entry.Name())
-		file, err := os.Open(devicePath)
-		if err != nil {
-			if os.IsPermission(err) {
-				return fmt.Errorf("permission denied. Add your user to the input group:\n  sudo usermod -a -G input $USER\nThen log out and log back in")
-			}
-			continue
-		}
-		file.Close()
-		return nil // Found at least one accessible device
-	}
-
-	return errors.New("no accessible input devices found")
 }

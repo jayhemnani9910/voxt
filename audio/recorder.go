@@ -240,7 +240,8 @@ func (r *Recorder) Stop() (string, error) {
 	dateDir := filepath.Join(r.recordingsDir, now.Format("2006-01-02"))
 
 	// Create date directory if it doesn't exist
-	if err := os.MkdirAll(dateDir, 0755); err != nil {
+	// Owner-only: recordings are the user's voice.
+	if err := os.MkdirAll(dateDir, 0700); err != nil {
 		return "", fmt.Errorf("failed to create recordings directory: %w", err)
 	}
 
@@ -259,7 +260,7 @@ func (r *Recorder) Stop() (string, error) {
 
 // saveWAV writes the recorded audio data to a WAV file with proper RIFF header
 func (r *Recorder) saveWAV(filePath string) error {
-	file, err := os.Create(filePath)
+	file, err := os.OpenFile(filePath, os.O_RDWR|os.O_CREATE|os.O_TRUNC, 0600)
 	if err != nil {
 		return err
 	}

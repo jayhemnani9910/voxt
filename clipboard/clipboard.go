@@ -46,7 +46,10 @@ func Copy(text string) error {
 	}
 
 	// X11 clipboard Write returns a channel that can be used to detect when
-	// clipboard ownership is lost, not an error. The write itself is synchronous.
-	clipboard.Write(clipboard.FmtText, []byte(text))
+	// clipboard ownership is lost, not an error. The write itself is synchronous;
+	// a nil channel means it failed.
+	if clipboard.Write(clipboard.FmtText, []byte(text)) == nil {
+		return fmt.Errorf("x11 clipboard write failed")
+	}
 	return nil
 }

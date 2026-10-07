@@ -33,7 +33,8 @@ func Init() (*DB, error) {
 		return nil, err
 	}
 
-	if err := os.MkdirAll(dataDir, 0755); err != nil {
+	// Owner-only: the history holds every transcription.
+	if err := os.MkdirAll(dataDir, 0700); err != nil {
 		return nil, fmt.Errorf("failed to create data directory: %w", err)
 	}
 

@@ -207,7 +207,12 @@ func (t *Transcriber) formatWithLlama(ctx context.Context, text string) (string,
 		return text, nil
 	}
 
-	return strings.TrimSpace(chatResp.Choices[0].Message.Content), nil
+	formatted := strings.TrimSpace(chatResp.Choices[0].Message.Content)
+	if formatted == "" {
+		// An empty reply would replace the transcription with nothing.
+		return text, nil
+	}
+	return formatted, nil
 }
 
 // Transcribe sends an audio file to Groq's Whisper API and returns the transcribed text
@@ -321,6 +326,10 @@ func (t *Transcriber) TranscribeWithContext(ctx context.Context, audioPath strin
 	var transcriptionResp TranscriptionResponse
 	if err := json.Unmarshal(respBody, &transcriptionResp); err != nil {
 		return "", fmt.Errorf("failed to parse response JSON: %w", err)
+	}
+
+	if strings.TrimSpace(transcriptionResp.Text) == "" {
+		return transcriptionResp.Text, nil
 	}
 
 	// Format with Llama to add separator between romanized and English

@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 	"sync"
 )
 
@@ -34,18 +35,19 @@ func DefaultConfig() *Config {
 	}
 }
 
+// desktopExecEscaper escapes a path for a quoted Exec= value (desktop entry spec).
+var desktopExecEscaper = strings.NewReplacer(`\`, `\\`, `"`, `\"`, "`", "\\`", "$", `\$`)
+
 // Load reads the configuration from ~/.config/voxt/config.json
 // If the file doesn't exist, it creates a default config file
 func Load() (*Config, error) {
-	configMutex.RLock()
-	defer configMutex.RUnlock()
-
 	configPath, err := getConfigPath()
 	if err != nil {
 		return nil, err
 	}
 
-	// Check if config file exists
+	// Check if config file exists. Not under the read lock: Save takes the
+	// write lock on the same mutex, so saving the default here deadlocked.
 	if _, err := os.Stat(configPath); os.IsNotExist(err) {
 		// Create default config
 		cfg := DefaultConfig()
@@ -56,7 +58,9 @@ func Load() (*Config, error) {
 	}
 
 	// Read existing config
+	configMutex.RLock()
 	data, err := os.ReadFile(configPath)
+	configMutex.RUnlock()
 	if err != nil {
 		return nil, err
 	}
@@ -176,10 +180,10 @@ func (c *Config) SetAutoStart(enabled bool) error {
 		desktopContent := fmt.Sprintf(`[Desktop Entry]
 Type=Application
 Name=Voxt
-Exec=%s
+Exec="%s"
 Hidden=false
 X-GNOME-Autostart-enabled=true
-`, execPath)
+`, desktopExecEscaper.Replace(execPath))
 		if err := os.WriteFile(autostartFile, []byte(desktopContent), 0644); err != nil {
 			return err
 		}

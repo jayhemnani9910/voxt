@@ -5,7 +5,7 @@ A voice-to-text clipboard tool for Linux. Press a hotkey, speak, and get your tr
 ## Features
 
 - **Global Hotkey**: Press F9 to start/stop recording (configurable)
-- **Fast Transcription**: Uses Groq's Whisper API for quick, accurate results
+- **Fast Transcription**: Uses Groq's Whisper API, then Groq's Llama model to romanize Hindi/Gujarati and add an English translation (English text is sent too and should come back unchanged)
 - **Clipboard Integration**: Transcribed text automatically copied to clipboard
 - **Desktop Notifications**: Visual feedback when transcription is ready
 - **System Tray**: Minimal UI with tray icon showing recording state

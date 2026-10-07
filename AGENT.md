@@ -157,7 +157,6 @@ type Tray struct {
     settingsItem  *systray.MenuItem
     quitItem      *systray.MenuItem
     onSettings    func()
-    onQuit        func()
 }
 ```
 
@@ -168,7 +167,6 @@ type Tray struct {
 | `(t *Tray) Run(onReady func())` | Start tray event loop (blocking) |
 | `(t *Tray) SetIdle()` | Switch to green icon, "Ready" tooltip |
 | `(t *Tray) SetRecording()` | Switch to red icon, "Recording" tooltip |
-| `(t *Tray) Quit()` | Exit tray |
 
 **Menu Structure:**
 1. "Settings" — Opens config file with xdg-open
@@ -193,7 +191,6 @@ type Tray struct {
 | `NewNotifier() (*Notifier, error)` | Connect to DBus session bus |
 | `(n *Notifier) ShowTranscription(text string) error` | Show notification with transcribed text (3s) |
 | `(n *Notifier) ShowError(message string) error` | Show error notification (5s) |
-| `(n *Notifier) ShowInfo(title, body string) error` | Show info notification (3s) |
 | `(n *Notifier) Close() error` | Close DBus connection |
 
 **Notification App Name:** "Voxt"
