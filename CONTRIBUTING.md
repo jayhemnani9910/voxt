@@ -5,7 +5,7 @@
 You need Go 1.21 or newer and the system libraries. On Ubuntu or Debian:
 
 ```bash
-sudo apt install -y golang-go gcc pkg-config portaudio19-dev libayatana-appindicator3-dev libx11-dev
+sudo apt install -y git golang-go gcc pkg-config portaudio19-dev libayatana-appindicator3-dev libx11-dev
 git clone https://github.com/jayhemnani9910/voxt.git
 cd voxt
 make check

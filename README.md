@@ -5,7 +5,7 @@
 Press a hotkey on Linux, speak, and the text lands on your clipboard.
 
 ```bash
-sudo apt install -y golang-go gcc pkg-config portaudio19-dev libayatana-appindicator3-dev libx11-dev && go install github.com/jayhemnani9910/voxt@latest
+sudo apt install -y git golang-go gcc pkg-config portaudio19-dev libayatana-appindicator3-dev libx11-dev && go install github.com/jayhemnani9910/voxt@latest
 ```
 
 [![CI](https://github.com/jayhemnani9910/voxt/actions/workflows/ci.yml/badge.svg?branch=master)](https://github.com/jayhemnani9910/voxt/actions/workflows/ci.yml)
@@ -87,7 +87,7 @@ Recordings and history stay on disk until you delete them. They are readable onl
 Fedora:
 
 ```bash
-sudo dnf install -y golang gcc pkgconf-pkg-config portaudio-devel libayatana-appindicator-gtk3-devel libX11-devel && go install github.com/jayhemnani9910/voxt@latest
+sudo dnf install -y git golang gcc pkgconf-pkg-config portaudio-devel libayatana-appindicator-gtk3-devel libX11-devel && go install github.com/jayhemnani9910/voxt@latest
 ```
 
 ## Building from source
