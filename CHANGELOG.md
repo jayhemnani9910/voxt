@@ -15,7 +15,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Removed
 
-- `AGENTS.md`.
+- `AGENTS.md` and `AGENT.md`.
 
 ## 2026-10-07
 
