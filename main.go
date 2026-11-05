@@ -9,14 +9,14 @@ import (
 	"sync"
 	"time"
 
-	"voxt/audio"
-	"voxt/clipboard"
-	"voxt/config"
-	"voxt/db"
-	"voxt/hotkey"
-	"voxt/notify"
-	"voxt/transcribe"
-	"voxt/tray"
+	"github.com/jayhemnani9910/voxt/audio"
+	"github.com/jayhemnani9910/voxt/clipboard"
+	"github.com/jayhemnani9910/voxt/config"
+	"github.com/jayhemnani9910/voxt/db"
+	"github.com/jayhemnani9910/voxt/hotkey"
+	"github.com/jayhemnani9910/voxt/notify"
+	"github.com/jayhemnani9910/voxt/transcribe"
+	"github.com/jayhemnani9910/voxt/tray"
 )
 
 //go:embed assets/beep_start.wav assets/beep_stop.wav

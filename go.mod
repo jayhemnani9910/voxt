@@ -1,4 +1,4 @@
-module voxt
+module github.com/jayhemnani9910/voxt
 
 go 1.21.0
 
