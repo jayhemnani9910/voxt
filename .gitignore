@@ -14,6 +14,7 @@ build/
 # Local settings
 .claude/
 AGENTS.md
+AGENT.md
 
 # Secrets
 .env*
