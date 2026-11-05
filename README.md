@@ -1,125 +1,114 @@
-# Voxt
+# voxt
 
-A voice-to-text clipboard tool for Linux. Press a hotkey, speak, and get your transcription copied to clipboard.
+![Walkthrough of voxt: a real first run in a container, the code path a recording takes, the Llama prompt examples, and the transcription tests passing against a fake Groq](docs/demo.gif)
 
-## Features
+Press a hotkey on Linux, speak, and the text lands on your clipboard.
 
-- **Global Hotkey**: Press F9 to start/stop recording (configurable)
-- **Fast Transcription**: Uses Groq's Whisper API, then Groq's Llama model to romanize Hindi/Gujarati and add an English translation (English text is sent too and should come back unchanged)
-- **Clipboard Integration**: Transcribed text automatically copied to clipboard
-- **Desktop Notifications**: Visual feedback when transcription is ready
-- **System Tray**: Minimal UI with tray icon showing recording state
-- **History**: SQLite database stores all transcriptions
-- **Wayland & X11**: Works on both display servers
-
-## Requirements
-
-### System Dependencies
-
-**Ubuntu/Debian:**
 ```bash
-sudo apt install portaudio19-dev libayatana-appindicator3-dev
+sudo apt install -y golang-go gcc pkg-config portaudio19-dev libayatana-appindicator3-dev libx11-dev && go install github.com/jayhemnani9910/voxt@latest
 ```
 
-**Fedora:**
-```bash
-sudo dnf install portaudio-devel libayatana-appindicator-gtk3-devel
-```
+[![CI](https://github.com/jayhemnani9910/voxt/actions/workflows/ci.yml/badge.svg?branch=master)](https://github.com/jayhemnani9910/voxt/actions/workflows/ci.yml)
+[![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 
-### Input Group Access
+The GIF is a walkthrough, not a recording of live dictation. A live run needs a microphone and a Groq key.
 
-To capture global hotkeys, your user must be in the `input` group:
+## Setup
+
+The install line puts the binary in `~/go/bin`. It needs Go 1.21 or newer.
+
+voxt reads the hotkey directly from `/dev/input`, so your user has to be in the `input` group. Log out and back in after this:
+
 ```bash
 sudo usermod -a -G input $USER
 ```
-Log out and back in for this to take effect.
 
-### Groq API Key
-
-Get a free API key from [console.groq.com](https://console.groq.com)
-
-## Installation
-
-### From Source
-
-```bash
-# Clone the repository
-git clone https://github.com/jayhemnani9910/voxt.git
-cd voxt
-
-# Check dependencies
-make check
-
-# Build
-make build
-
-# Install to /usr/local/bin (optional)
-make install
-```
-
-### Configuration
-
-On first run, voxt creates a config file at `~/.config/voxt/config.json`:
+Run `~/go/bin/voxt` once. It writes `~/.config/voxt/config.json`. Get a key from [console.groq.com](https://console.groq.com) and put it in that file:
 
 ```json
 {
-  "groq_api_key": "your-api-key-here",
+  "groq_api_key": "your-key-here",
   "hotkey": "F9",
-  "recordings_dir": "~/recordings",
-  "language_mode": "romanized",
-  "auto_start": false
+  "recordings_dir": "~/recordings"
 }
 ```
 
-Edit this file to add your Groq API key.
+The key is picked up on your next recording, so you don't have to restart. A changed hotkey needs a restart.
 
 ## Usage
 
-1. Run `voxt` (or it starts automatically if autostart is enabled)
-2. Look for the green tray icon
-3. Press **F9** to start recording (icon turns red, beep plays)
-4. Speak your message
-5. Press **F9** again to stop (beep plays, transcription starts)
-6. Text is copied to clipboard and notification appears
+1. Run `voxt`. A green icon shows up in the tray.
+2. Press F9. You hear a beep and the icon turns red.
+3. Speak.
+4. Press F9 again. You hear a beep and the icon turns green.
+5. When the transcription is back, the text is on your clipboard and a notification shows it for 3 seconds.
 
-### Tray Menu
+The tray menu has Settings, which opens the config file, and Quit.
 
-- **Settings**: Opens config file for editing
-- **Quit**: Exit voxt
+Any key from F1 to F12 works as the hotkey.
 
-## Supported Hotkeys
+## How it works
 
-F1, F2, F3, F4, F5, F6, F7, F8, F9 (default), F10, F11, F12
+1. PortAudio records 16 kHz mono from your default mic, for up to 10 minutes.
+2. The audio is saved as a WAV in `~/recordings/YYYY-MM-DD/`.
+3. The WAV goes to Groq's `whisper-large-v3`, which detects the language.
+4. The text goes to Groq's `llama-3.1-8b-instant`. English should come back unchanged. Hindi or Gujarati gets romanized, with an English translation after a `---` line.
+5. If the Llama call fails, you get the Whisper text as it is.
+6. The result goes into a SQLite history and onto the clipboard.
 
-## File Locations
+Example from the prompt in `transcribe/groq.go`:
+
+```
+kem cho bhai
+---
+How are you brother
+```
+
+The hotkey uses evdev, so it works on Wayland as well as X11. The clipboard uses `wl-copy` on Wayland if you have it installed, and the X11 clipboard otherwise.
+
+## Privacy
+
+Your audio and its transcript are sent to Groq. Nothing else leaves your machine.
+
+Recordings and history stay on disk until you delete them. They are readable only by your user, and so is the config file. The app logs the length of a transcription, not its text.
+
+## Files
 
 | File | Location |
 |------|----------|
 | Config | `~/.config/voxt/config.json` |
-| Database | `~/.local/share/voxt/history.db` |
-| Recordings | `~/recordings/YYYY-MM-DD/` |
+| History | `~/.local/share/voxt/history.db` |
+| Recordings | `~/recordings/YYYY-MM-DD/audio_HHMMSS.wav` |
 
-## Build Targets
+`language_mode`, `auto_start`, `overlay_x` and `overlay_y` also appear in the config file, but the app doesn't use them.
+
+## Other distros
+
+Fedora:
 
 ```bash
-make build      # Build binary
-make release    # Build optimized release
-make install    # Install to /usr/local/bin
-make check      # Verify system dependencies
-make clean      # Remove build artifacts
-make help       # Show all targets
+sudo dnf install -y golang gcc pkgconf-pkg-config portaudio-devel libayatana-appindicator-gtk3-devel libX11-devel && go install github.com/jayhemnani9910/voxt@latest
 ```
 
-## Tech Stack
+## Building from source
 
-- **Language**: Go
-- **Audio**: PortAudio
-- **Transcription**: Groq Whisper API
-- **System Tray**: getlantern/systray
-- **Notifications**: DBus (freedesktop)
-- **Clipboard**: Wayland (wl-copy) / X11
-- **Database**: SQLite
+```bash
+git clone https://github.com/jayhemnani9910/voxt.git
+cd voxt
+make check      # verify system libraries
+make build      # build ./voxt
+make test       # run the tests
+make install    # copy to /usr/local/bin, asks for sudo
+make autostart  # start on login, expects the /usr/local/bin copy
+make help       # list every target
+```
+
+See [CONTRIBUTING.md](CONTRIBUTING.md) to work on it.
+
+## Built on
+
+PortAudio through [gordonklaus/portaudio](https://github.com/gordonklaus/portaudio), [getlantern/systray](https://github.com/getlantern/systray), [esiqveland/notify](https://github.com/esiqveland/notify) over DBus, [mattn/go-sqlite3](https://github.com/mattn/go-sqlite3) and [golang.design/x/clipboard](https://github.com/golang-design/clipboard).
 
 ## License
 
-MIT
+[MIT](LICENSE)
