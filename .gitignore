@@ -13,6 +13,12 @@ build/
 
 # Local settings
 .claude/
+AGENTS.md
+AGENT.md
+
+# Secrets
+.env*
+!.env.example
 
 # OS files
 .DS_Store
