@@ -128,6 +128,15 @@ func (t *Transcriber) doWithRetry(ctx context.Context, req *http.Request, client
 			case <-time.After(delay):
 			}
 			delay = min(delay*2, maxRetryDelay)
+
+			// The previous attempt consumed the body, so rewind it.
+			if req.GetBody != nil {
+				body, err := req.GetBody()
+				if err != nil {
+					return nil, fmt.Errorf("failed to reset request body: %w", err)
+				}
+				req.Body = body
+			}
 		}
 
 		if ctx.Err() != nil {
