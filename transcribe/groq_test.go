@@ -1,6 +1,7 @@
 package transcribe
 
 import (
+	"context"
 	"encoding/json"
 	"io"
 	"net/http"
@@ -131,5 +132,52 @@ func TestTranscribeRejectsMissingFile(t *testing.T) {
 func TestNewTranscriberNeedsKey(t *testing.T) {
 	if NewTranscriber("") != nil {
 		t.Error("expected nil without an API key")
+	}
+}
+
+// flakyServer answers 503 on the first call and 200 afterwards, recording the
+// body each call received.
+type flakyServer struct {
+	bodies []string
+}
+
+func (f *flakyServer) RoundTrip(req *http.Request) (*http.Response, error) {
+	var body []byte
+	if req.Body != nil {
+		var err error
+		if body, err = io.ReadAll(req.Body); err != nil {
+			return nil, err
+		}
+	}
+	f.bodies = append(f.bodies, string(body))
+	if len(f.bodies) == 1 {
+		resp := response(http.StatusServiceUnavailable, "")
+		resp.Header.Set("Retry-After", "0")
+		return resp, nil
+	}
+	return response(http.StatusOK, "{}"), nil
+}
+
+func TestDoWithRetryResendsBody(t *testing.T) {
+	fake := &flakyServer{}
+	tr := NewTranscriber("test-key")
+	req, err := http.NewRequest(http.MethodPost, groqAPIEndpoint, strings.NewReader("audio"))
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	resp, err := tr.doWithRetry(context.Background(), req, &http.Client{Transport: fake})
+	if err != nil {
+		t.Fatal(err)
+	}
+	resp.Body.Close()
+
+	if len(fake.bodies) != 2 {
+		t.Fatalf("got %d attempts, want 2", len(fake.bodies))
+	}
+	for i, body := range fake.bodies {
+		if body != "audio" {
+			t.Errorf("attempt %d sent body %q, want %q", i+1, body, "audio")
+		}
 	}
 }
